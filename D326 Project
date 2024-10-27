@@ -2,12 +2,12 @@ A:	My business question is, "How many transactions were made per store, employee
 
 A1:	My summary table will include:
 •	store_id (INT) PRIMARY KEY
-•	month (VARCHAR(9))
+•	month (VARCHAR(9)) PRIMARY KEY
 •	total_transactions (INT)
 	My detailed table will include:
-•	store_id (INT) PRIMARY KEY, FOREIGN KEY
+•	store_id (INT) PRIMARY KEY
 •	staff_id (INT) PRIMARY KEY
-•	month (VARCHAR(9))
+•	month (VARCHAR(9)) PRIMARY KEY
 •	total_transactions (INT)
 
 A2:	Data types used will include:

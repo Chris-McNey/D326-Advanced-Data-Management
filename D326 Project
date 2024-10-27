@@ -15,7 +15,7 @@ A2:	Data types used will include:
 •	VARCHAR(9) (an alphanumerical string up to 9 characters; used to write out the months – September is the longest name at 9 letters)
 
 A3:	The detailed report table will pull from the ‘staff’ table, the ‘store’ table, and the ‘rental’ table.
-The summary report table will pull from the ‘rental_details’ table.
+	The summary report table will pull from the ‘rental_details’ table.
 
 A4:	The column 'rental_date' in the 'rental' table will be transformed. The timestamp without timezone data will be transformed into VARCHAR(9) to replace the yyyy-mm-dd hh:mm:ss format into February, March, April, and May, respectively. This will be done for better readability (ex. "250 transactions in March" vs. "250 transactions in 03".) Only the months will be kept as all transactions take place within the same year, so there is no need to specify the year. Specific days are outside of the scope of the detailed report. This transformation will occur when the data is pulled from the 'rental' table and inserted into the 'detailed' table.
 
@@ -25,50 +25,50 @@ A5:	The summary table can be used to show at a glance what the number of rentals
 A6:	This report should be updated on a month-to-month basis to monitor monthly trends. This can be scheduled for the first of every month. Eventually, it should also be refreshed with year-to-year reporting for a broader view of trends.
 
 B:	CREATE OR REPLACE FUNCTION rental_timestamp_to_month(rts TIMESTAMP)
-RETURNS TEXT
-LANGUAGE plpgsql AS $$
-BEGIN
-    		RETURN TO_CHAR(rts, 'Month');
-END;
-$$;
+	RETURNS TEXT
+	LANGUAGE plpgsql AS $$
+	BEGIN
+		RETURN TO_CHAR(rts, 'Month');
+	END;
+	$$;
 
 C:	CREATE TABLE rental_summary (
-store_id INT,
-month VARCHAR(9),
-total_rentals INT,
-PRIMARY KEY (store_id, month)
-);
-CREATE TABLE rental_details (
-store_id INT,
-staff_id INT,
-month VARCHAR(9),
-total_rentals INT,
-PRIMARY KEY (store_id, staff_id, month),
-FOREIGN KEY (store_id) REFERENCES store(store_id),
-FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
-);
+	store_id INT,
+	month VARCHAR(9),
+	total_rentals INT,
+	PRIMARY KEY (store_id, month)
+	);
+	CREATE TABLE rental_details (
+	store_id INT,
+	staff_id INT,
+	month VARCHAR(9),
+	total_rentals INT,
+	PRIMARY KEY (store_id, staff_id, month),
+	FOREIGN KEY (store_id) REFERENCES store(store_id),
+	FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
+	);
 
 D:	INSERT INTO rental_details (staff_id, store_id, month, total_rentals)
-SELECT 
+	SELECT 
    		staff.staff_id,
   		store.store_id,
     		rental_timestamp_to_month(rental_date) AS month,
   		COUNT(*) AS total_rentals
-FROM 
+	FROM 
   		staff
-INNER JOIN 
-rental ON staff.staff_id = rental.staff_id
-INNER JOIN 
-store ON staff.store_id = store.store_id
-GROUP BY 
+	INNER JOIN 
+		rental ON staff.staff_id = rental.staff_id
+	INNER JOIN 
+		store ON staff.store_id = store.store_id
+	GROUP BY 
     		store.store_id, staff.staff_id, month
-ORDER BY 
+	ORDER BY 
     		store.store_id, staff.staff_id, month;
 
 E:	CREATE OR REPLACE FUNCTION update_summary()
-RETURNS TRIGGER
-LANGUAGE plpgsql AS $$
-BEGIN
+	RETURNS TRIGGER
+	LANGUAGE plpgsql AS $$
+	BEGIN
 		DELETE FROM rental_summary;
 		INSERT INTO rental_summary
 		SELECT store_id, month, total_rentals
@@ -76,17 +76,17 @@ BEGIN
 		GROUP BY store_id, month, total_rentals
 		ORDER BY store_id, month;
 		RETURN NEW;
-END;
-$$;
+	END;
+	$$;
 
-CREATE TRIGGER after_rental_details_update
-AFTER INSERT ON rental_details
-FOR EACH ROW
-EXECUTE FUNCTION update_summary();
+	CREATE TRIGGER after_rental_details_update
+	AFTER INSERT ON rental_details
+	FOR EACH ROW
+	EXECUTE FUNCTION update_summary();
 
 F:	CREATE OR REPLACE PROCEDURE data_refresh()
-LANGUAGE plpgsql AS $$
-BEGIN
+	LANGUAGE plpgsql AS $$
+	BEGIN
 		DELETE FROM rental_details;
 		DELETE FROM rental_summary;
 		INSERT INTO rental_details (staff_id, store_id, month, total_rentals)
@@ -106,14 +106,14 @@ BEGIN
 		ORDER BY 
     			store.store_id, staff.staff_id, month;
 		RETURN;
-END;
-$$;
+	END;
+	$$;
 
---Because of the trigger, the summary report is automatically updated with the detailed report.
---Queries that are used to demonstrate the code is working as intended:
---SELECT * FROM rental_details;
---SELECT * FROM rental_summary;
---DELETE FROM rental_details;
---CALL data_refresh();
+	--Because of the trigger, the summary report is automatically updated with the detailed report.
+	--Queries that are used to demonstrate the code is working as intended:
+	--SELECT * FROM rental_details;
+	--SELECT * FROM rental_summary;
+	--DELETE FROM rental_details;
+	--CALL data_refresh();
 
 F1:	A job scheduling tool that can be used is pgAgent. It is designed for PostgreSQL and is used to schedule and automate tasks, such as the stored procedure from Part F. This can be scheduled for the first of the month every month so that the reports can be updated with the previous month's data.
